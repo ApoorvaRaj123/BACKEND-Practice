@@ -20,8 +20,9 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.get("/profile", (req, res) => {
-  res.render("profile");
+app.get("/profile", isLoggedIn, (req, res) => {
+  let user = await userModel.findOne({email: req.body.email});
+  res.render("profile", {user});
 });
 
 app.post("/register", async (req,res)=>{
@@ -31,7 +32,7 @@ app.post("/register", async (req,res)=>{
 
     bcrypt.genSalt(10, (err, salt)=>{
         bcrypt.hash(password, salt, (err, hash)=>{
-            let createdUser = userModel.create({
+            let user = userModel.create({
                 name,
                 username,
                 email,
@@ -39,7 +40,7 @@ app.post("/register", async (req,res)=>{
                 age,
             })
 
-            let token = jwt.sign({email:email, userid: createdUser._id})
+            let token = jwt.sign({email:email, userid: user._id})
             res.cookie("token",token);
             res.send("registered");
 
@@ -57,8 +58,9 @@ app.post("/login", async (req, res) => {
   bcrypt.compare(password, user.password, (err, result) => {
     if (result) {
       res.status(200).send("Logged in");
-      let token = jwt.sign({ email: email, userid: createdUser._id }, "shhhh");
+      let token = jwt.sign({ email: email, userid: user._id }, "shhhh");
       res.cookie("token", token);
+      res.status(200).redirect("/profile");
     } else res.redirect("/login");
   });
 });
